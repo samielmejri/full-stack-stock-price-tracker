@@ -1,50 +1,48 @@
-const puppeteer = require("puppeteer");
+// services/scraperService.js
 
-/**
- * Fetch current stock data for a given symbol.
- * @param {string} symbol - Stock symbol (e.g., AAPL, TSLA).
- * @returns {Object} - Stock data including current price and percentage change.
- */
-exports.getStockData = async (symbol) => {
+const puppeteer = require('puppeteer');
+
+const fetchStockData = async (symbol) => {
   const url = `https://finance.yahoo.com/quote/${symbol}`;
-  let browser;
 
   try {
-    browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    });
+      const browser = await puppeteer.launch({ headless: true });
+      const page = await browser.newPage();
+      await page.goto(url, { waitUntil: 'domcontentloaded' });
 
-    const page = await browser.newPage();
-    await page.goto(url, { waitUntil: 'domcontentloaded' });
+      // Scraping the stock price and percentage change using correct selectors
+      const stockData = await page.evaluate(() => {
+          // Selector for the stock price
+          const priceSelector = 'span[data-testid="qsp-price"]';
 
-    const stockData = await page.evaluate(() => {
-      const priceSelector = 'fin-streamer[data-field="regularMarketPrice"]';
-      const changeSelector = 'fin-streamer[data-field="regularMarketChangePercent"]';
+          // Selector for the percentage change (updated based on your HTML)
+          const changeSelector = 'span[data-testid="qsp-price-change-percent"]';
 
-      const priceElement = document.querySelector(priceSelector);
-      const changeElement = document.querySelector(changeSelector);
+          const priceElement = document.querySelector(priceSelector);
+          const changeElement = document.querySelector(changeSelector);
 
-      if (!priceElement || !changeElement) {
-        throw new Error('Unable to locate stock data elements');
-      }
+          if (!priceElement || !changeElement) {
+            console.log("Could not find price or change element!");
+            return null;
+          }
 
-      const currentPrice = parseFloat(priceElement.textContent.replace(/,/g, ''));
-      const percentageChange = parseFloat(changeElement.textContent.replace('%', ''));
+          // Extract the current price (removing any currency symbols and formatting)
+          const currentPrice = parseFloat(priceElement.textContent.replace(/[^0-9.-]+/g, ''));
 
-      return { currentPrice, percentageChange };
-    });
+          // Extract the percentage change (removing % sign and formatting)
+          const percentageChangeText = changeElement.textContent.replace(/[^0-9.-]+/g, ''); // removing any non-numeric characters
+          const percentageChange = parseFloat(percentageChangeText);
 
-    return {
-      symbol,
-      currentPrice: stockData.currentPrice,
-      percentageChange: stockData.percentageChange,
-      lastUpdated: new Date(),
-    };
+          return { currentPrice, percentageChange };
+      });
+
+      await browser.close();
+      return stockData || null;
   } catch (error) {
-    console.error(`Error scraping stock data for ${symbol}:`, error.message);
-    return null;
-  } finally {
-    if (browser) await browser.close();
+      console.error("Error scraping stock data:", error);
+      return null;
   }
 };
+
+// Export the function so it can be used in other files
+module.exports = { fetchStockData };

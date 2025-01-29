@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const HistorySchema = new mongoose.Schema({
-  stockId: { type: mongoose.Schema.Types.ObjectId, ref: 'Stock', required: true },
+  symbol: { type: String, required: true, unique: true },
   prices: [
     {
       date: { type: Date, required: true },

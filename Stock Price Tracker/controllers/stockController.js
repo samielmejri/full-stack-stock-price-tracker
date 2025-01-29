@@ -66,23 +66,30 @@ const getStockData = async (req, res) => {
 // GET /api/stocks/history/:symbol
 const getHistoricalData = async (req, res) => {
   try {
-      // Access the symbol parameter and apply toUpperCase()
-      const symbol = req.params.symbol.toUpperCase();
+    const symbol = req.params.symbol.toUpperCase();
+    const history = await History.findOne({ symbol });
 
-      // Fetch historical data from database
-      const stock = await Stock.findOne({ symbol });
+    if (history && history.prices.length) {
+      // ✅ Filter data for the last 7 days
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-      if (stock && stock.history.length) {
-          return res.json(stock.history);
+      const filteredHistory = history.prices.filter(stock => new Date(stock.date) >= sevenDaysAgo);
+      
+      if (filteredHistory.length === 0) {
+        return res.status(404).json({ error: 'No historical data found for the last 7 days.' });
       }
 
-      // If no data in DB, you could scrape historical data if necessary (not shown here)
-      res.status(404).json({ error: 'No historical data found' });
+      return res.json(filteredHistory);
+    }
 
+    res.status(404).json({ error: 'No historical data found' });
   } catch (err) {
-      console.error("Error in getHistoricalData:", err.message);
-      res.status(500).json({ error: 'Internal server error' });
+    console.error("Error in getHistoricalData:", err.message);
+    res.status(500).json({ error: 'Internal server error' });
   }
 };
+
+
 
 module.exports = { getStockData, getHistoricalData };

@@ -1,34 +1,24 @@
 const axios = require("axios");
-const cheerio = require("cheerio");
 
-exports.scrapeHistoricalData = async (symbol) => {
-  const url = `https://finance.yahoo.com/quote/${symbol}/history?p=${symbol}`;
+const scrapeHistoricalData = async (symbol) => {
+  const INTERVAL = "1d"; // Daily data
+  const RANGE = "7d"; // Limit to last 7 days
+
   try {
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=${INTERVAL}&range=${RANGE}`;
     const response = await axios.get(url);
-    const $ = cheerio.load(response.data);
 
-    const historicalData = [];
+    const { timestamp, indicators } = response.data.chart.result[0];
+    const prices = indicators.quote[0].close;
 
-    // Select rows in the historical table
-    $("table tbody tr").each((index, row) => {
-      const columns = $(row).find("td");
-
-      if (columns.length >= 7) {
-        const date = $(columns[0]).text().trim();
-        const closePrice = $(columns[4]).text().trim();
-
-        if (date && closePrice && !isNaN(closePrice)) {
-          historicalData.push({
-            date,
-            closePrice: parseFloat(closePrice.replace(/,/g, "")),
-          });
-        }
-      }
-    });
-
-    return historicalData;
-  } catch (err) {
-    console.error("Error scraping historical data:", err.message);
+    return timestamp.map((time, index) => ({
+      date: new Date(time * 1000).toISOString().split("T")[0], // Convert timestamp to YYYY-MM-DD
+      price: prices[index],
+    }));
+  } catch (error) {
+    console.error("Error fetching stock data:", error.message);
     return [];
   }
 };
+
+module.exports = { scrapeHistoricalData };

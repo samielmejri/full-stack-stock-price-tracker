@@ -5,7 +5,12 @@ const stockSchema = new mongoose.Schema({
   currentPrice: { type: Number, required: true },
   percentageChange: { type: Number, required: true },
   lastUpdated: { type: Date, default: Date.now },
-  history: { type: Array, default: [] },
+  history: [
+    {
+      date: { type: Date, required: true },
+      price: { type: Number, required: true },
+    },
+  ],
 });
 
 module.exports = mongoose.model('Stock', stockSchema);

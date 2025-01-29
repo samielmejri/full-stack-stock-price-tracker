@@ -64,7 +64,7 @@ const scrapeAndSaveStockData = async (symbol) => {
       // ✅ Get the last 7 actual days (excluding older data)
       const today = new Date();
       const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(today.getDate() - 8); // 7 days before today
+      sevenDaysAgo.setDate(today.getDate() - 7); // 7 days before today
 
       historicalData = historicalData.filter(entry => {
         const entryDate = new Date(entry.date);
@@ -86,8 +86,6 @@ const scrapeAndSaveStockData = async (symbol) => {
     console.error(`Error scraping and saving historical data for ${symbol}:`, error.message);
   }
 };
-
-
 
 
 module.exports = { fetchStockData, scrapeAndSaveStockData };

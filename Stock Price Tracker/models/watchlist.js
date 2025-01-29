@@ -1,8 +1,8 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
-const watchlistSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  stocks: [{ type: String, ref: 'Stock' }], // Stock symbols
+const WatchlistSchema = new mongoose.Schema({
+  userId: { type: String, required: true, unique: true }, // Unique watchlist per user
+  stocks: [{ type: String, uppercase: true }], // List of stock symbols
 });
 
-module.exports = mongoose.model('Watchlist', watchlistSchema);
+module.exports = mongoose.model("Watchlist", WatchlistSchema);

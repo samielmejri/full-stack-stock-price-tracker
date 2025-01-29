@@ -5,6 +5,7 @@ const connectDB = require("./config/db");
 const errorHandler = require("./middlewares/errorHandler");
 require('./services/schedulerService'); // Start the scheduler
 const stockRoutes = require('./routes/stockRoutes');
+const watchlistRoutes = require("./routes/watchlistRoutes");
 const scraperService = require("./services/scraperService"); // Correct relative path
 
 const app = express();
@@ -20,6 +21,9 @@ const Stock = require("./models/stock"); // Correct path to the Stock model
 
 // API Routes
 app.use('/api/stocks', stockRoutes);
+
+// New watchlist routes
+app.use("/api/watchlist", watchlistRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

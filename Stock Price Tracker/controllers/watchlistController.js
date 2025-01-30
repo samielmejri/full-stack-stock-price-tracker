@@ -3,19 +3,17 @@ const History = require("../models/History");
 const scraperService = require("../services/scraperService");
 const { scrapeAndSaveStockData } = require("../services/scraperService");
 
-/**
- * Add a stock to the user's watchlist
- */
+// Add a stock to the user's watchlist
 const addStockToWatchlist = async (req, res) => {
-  const { userId, symbol } = req.body;
+  const { symbol } = req.body;
 
-  if (!userId || !symbol) {
-    return res.status(400).json({ error: "User ID and stock symbol are required" });
+  if (!symbol) {
+    return res.status(400).json({ error: "Stock symbol is required" });
   }
 
   try {
     const watchlist = await Watchlist.findOneAndUpdate(
-      { userId },
+      { userId: req.user }, // Assuming req.user is populated with the logged-in user's ID
       { $addToSet: { stocks: symbol.toUpperCase() } }, // Prevent duplicates
       { upsert: true, new: true }
     );
@@ -26,19 +24,17 @@ const addStockToWatchlist = async (req, res) => {
   }
 };
 
-/**
- * Remove a stock from the user's watchlist
- */
+// Remove a stock from the user's watchlist
 const removeStockFromWatchlist = async (req, res) => {
-  const { userId, symbol } = req.body;
+  const { symbol } = req.body;
 
-  if (!userId || !symbol) {
-    return res.status(400).json({ error: "User ID and stock symbol are required" });
+  if (!symbol) {
+    return res.status(400).json({ error: "Stock symbol is required" });
   }
 
   try {
     const watchlist = await Watchlist.findOneAndUpdate(
-      { userId },
+      { userId: req.user }, // Assuming req.user is populated with the logged-in user's ID
       { $pull: { stocks: symbol.toUpperCase() } },
       { new: true }
     );
@@ -54,18 +50,10 @@ const removeStockFromWatchlist = async (req, res) => {
   }
 };
 
-/**
- * Retrieve user's watchlist along with stock data
- */
+// Retrieve user's watchlist along with stock data
 const getWatchlist = async (req, res) => {
-  const { userId } = req.params;
-
-  if (!userId) {
-    return res.status(400).json({ error: "User ID is required" });
-  }
-
   try {
-    const watchlist = await Watchlist.findOne({ userId });
+    const watchlist = await Watchlist.findOne({ userId: req.user }); // Assuming req.user is populated with the logged-in user's ID
 
     if (!watchlist) {
       return res.status(404).json({ error: "Watchlist not found" });
@@ -87,10 +75,11 @@ const getWatchlist = async (req, res) => {
 
           const historicalRecord = await History.findOne({ symbol });
 
-          let last7DaysHistory = historicalRecord?.prices?.filter((entry) => {
-            const entryDate = new Date(entry.date);
-            return entryDate >= sevenDaysAgo && entryDate <= today;
-          }) || [];
+          const last7DaysHistory =
+            historicalRecord?.prices?.filter((entry) => {
+              const entryDate = new Date(entry.date);
+              return entryDate >= sevenDaysAgo && entryDate <= today;
+            }) || [];
 
           // Sort history data (earliest to latest)
           last7DaysHistory.sort((a, b) => new Date(a.date) - new Date(b.date));
@@ -108,7 +97,7 @@ const getWatchlist = async (req, res) => {
       })
     );
 
-    res.json({ userId, stocks: stockData });
+    res.json({ userId: req.user, stocks: stockData });
   } catch (error) {
     console.error("Error retrieving watchlist:", error.message);
     res.status(500).json({ error: "Internal server error" });
